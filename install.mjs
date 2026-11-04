@@ -218,7 +218,8 @@ try {
   die(`generated patch does not parse, restored the backup:\n${error.message}`)
 }
 
-const dump = dumpConfig()
+let dump = dumpConfig()
+if (!dump.includes('serverName: tinyfish')) dump = dumpConfig()
 const presetSection = (dump.match(/- id: preset-standard\n([\s\S]*?)(?=\n- id: |\n- insert: |\n*$)/) || [])[1] || ''
 const plugins = (presetSection.match(/^ {6}- id: /gm) || []).length
 console.log('patched', patchPath)
