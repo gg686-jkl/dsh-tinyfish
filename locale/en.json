@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "TinyFish Web Toolkit",
-    "description": "Connects the TinyFish MCP server (search, fetch, automation) and runs the standard agent preset without the built-in web_search and web_fetch tools, so TinyFish is the only web toolkit."
+    "description": "Connects the TinyFish MCP server (search, fetch, automation) and overrides the agent presets that ship the built-in web_search and web_fetch tools, so TinyFish is the only web toolkit."
   }
 }

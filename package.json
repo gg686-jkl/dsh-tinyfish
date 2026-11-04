@@ -1,9 +1,9 @@
 {
   "name": "@local/dsh-tinyfish-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "TinyFish MCP connection plus a standard agent preset that leaves web search and fetch to TinyFish",
+  "description": "TinyFish MCP connection plus preset overrides that leave web search and fetch to TinyFish",
   "exports": {
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"

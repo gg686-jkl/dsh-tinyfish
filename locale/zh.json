@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "TinyFish 网页工具箱",
-    "description": "连接 TinyFish MCP 服务器（搜索、抓取、自动化），并让标准 agent preset 不再加载内置的 web_search 与 web_fetch 工具，使 TinyFish 成为唯一的网页工具箱。"
+    "description": "连接 TinyFish MCP 服务器（搜索、抓取、自动化），并覆盖自带 web_search / web_fetch 的 agent preset，使 TinyFish 成为唯一的网页工具箱。"
   }
 }
