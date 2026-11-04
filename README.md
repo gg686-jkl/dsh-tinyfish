@@ -2,6 +2,8 @@
 
 **Free web search for dsh — desktop and phone.**
 
+English | [中文](README.zh.md)
+
 - **Free.** dsh's built-in `web_search` / `web_fetch` go through DeepSeek's Search & Fetch API at
   **$0.75 per 1,000 searches** and **$0.75 per 1,000 fetches**. TinyFish search and fetch are free
   (rate-limited, no credit card) and the results are comparable.
@@ -25,7 +27,7 @@ TinyFish key: sk-tinyfish-xxxx
    (no git: curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish-mcp/tar.gz/refs/heads/main | tar xz)
 3. cd dsh-tinyfish-mcp && node install.mjs --key sk-tinyfish-xxxx
    If it reports that it cannot find the dsh installation, re-run with DSH_INSTALL=/opt/dsh in front.
-4. Report the printed "composed profile:" and "TinyFish MCP row mounted:" lines verbatim; if either says STILL PRESENT or false, the install failed — say so.
+4. Report the printed "composed profile:" and "TinyFish MCP row mounted:" lines verbatim; if either says STILL PRESENT or false, the install failed - say so.
 5. Run: dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'serverName: tinyfish'   (expect 1)
 6. Tell me to restart the app and open a new session; the current session keeps its old tools.
 
@@ -86,4 +88,4 @@ Requires dsh ≥ 0.2. No dependencies are installed; the MCP client ships with d
 
 ---
 
-[中文](README.zh.md) · MIT
+MIT

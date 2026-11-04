@@ -2,6 +2,8 @@
 
 **让 dsh 的网页搜索免费——电脑和手机都能用。**
 
+[English](README.md) | 中文
+
 - **免费。** dsh 内置的 `web_search` / `web_fetch` 走 DeepSeek 的 Search & Fetch API，按
   **$0.75 / 1,000 次搜索**、**$0.75 / 1,000 次抓取**计费。TinyFish 的搜索和抓取免费
   （有限速，不需要信用卡），效果相当。
@@ -12,23 +14,23 @@
 `web_search` / `web_fetch`。
 
 <details>
-<summary><b>让 agent 帮你装</b> —— 复制下面这段，填上 key</summary>
+<summary><b>让 agent 帮你装</b> —— 复制这段英文 prompt，填上 key 即可</summary>
 
 ```text
-把这个 dsh profile 的内置 web_search / web_fetch（DeepSeek 收费的 Search & Fetch API）换成 TinyFish MCP。中途失败就停下。
+Switch this machine's dsh profile from the built-in web_search / web_fetch (DeepSeek's paid Search & Fetch API) to TinyFish MCP. Stop if a step fails.
 
-TinyFish key：sk-tinyfish-xxxx
+TinyFish key: sk-tinyfish-xxxx
 
-1. `command -v dsh` 要有输出；记下 $DSH_PROFILE 和 $DSH_PROFILE_DIR，那就是要改的 profile。
+1. `command -v dsh` must print a path. Note $DSH_PROFILE and $DSH_PROFILE_DIR; that is the profile to patch.
 2. git clone https://github.com/gg686-jkl/dsh-tinyfish-mcp.git
-   （没有 git：curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish-mcp/tar.gz/refs/heads/main | tar xz）
+   (no git: curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish-mcp/tar.gz/refs/heads/main | tar xz)
 3. cd dsh-tinyfish-mcp && node install.mjs --key sk-tinyfish-xxxx
-   若提示找不到 dsh 安装目录，在命令前加 DSH_INSTALL=/opt/dsh 重试。
-4. 原样回报打印的 "composed profile:" 和 "TinyFish MCP row mounted:" 两行；出现 STILL PRESENT 或 false 就是没装成，不要报成功。
-5. 跑一次：dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'serverName: tinyfish'   （应为 1）
-6. 提醒我重启 app 并开新会话；当前会话的工具不会变。
+   If it reports that it cannot find the dsh installation, re-run with DSH_INSTALL=/opt/dsh in front.
+4. Report the printed "composed profile:" and "TinyFish MCP row mounted:" lines verbatim; if either says STILL PRESENT or false, the install failed - say so.
+5. Run: dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'serverName: tinyfish'   (expect 1)
+6. Tell me to restart the app and open a new session; the current session keeps its old tools.
 
-约束：只改当前 profile 的 cordis.patch.yml（脚本会先备份）；不要动 package.json、不要写 AGENTS.md、不要碰其他 profile。完整版见 PROMPT.md。
+Constraints: only the current profile's cordis.patch.yml may change (the script backs it up); do not edit package.json, create AGENTS.md, or touch other profiles. Full version: PROMPT.md.
 ```
 
 </details>
@@ -84,4 +86,4 @@ node install.mjs --force     # 按新版 dsh 重新生成
 
 ---
 
-[English](README.md) · MIT
+MIT
