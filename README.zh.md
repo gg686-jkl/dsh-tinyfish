@@ -11,6 +11,28 @@
 重启后新会话里是 `mcp__tinyfish__search`、`mcp__tinyfish__fetch_content`，不再有
 `web_search` / `web_fetch`。
 
+<details>
+<summary><b>让 agent 帮你装</b> —— 复制下面这段，填上 key</summary>
+
+```text
+把这个 dsh profile 的内置 web_search / web_fetch（DeepSeek 收费的 Search & Fetch API）换成 TinyFish MCP。中途失败就停下。
+
+TinyFish key：sk-tinyfish-xxxx
+
+1. `command -v dsh` 要有输出；记下 $DSH_PROFILE 和 $DSH_PROFILE_DIR，那就是要改的 profile。
+2. git clone https://github.com/gg686-jkl/dsh-tinyfish-mcp.git
+   （没有 git：curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish-mcp/tar.gz/refs/heads/main | tar xz）
+3. cd dsh-tinyfish-mcp && node install.mjs --key sk-tinyfish-xxxx
+   若提示找不到 dsh 安装目录，在命令前加 DSH_INSTALL=/opt/dsh 重试。
+4. 原样回报打印的 "composed profile:" 和 "TinyFish MCP row mounted:" 两行；出现 STILL PRESENT 或 false 就是没装成，不要报成功。
+5. 跑一次：dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'serverName: tinyfish'   （应为 1）
+6. 提醒我重启 app 并开新会话；当前会话的工具不会变。
+
+约束：只改当前 profile 的 cordis.patch.yml（脚本会先备份）；不要动 package.json、不要写 AGENTS.md、不要碰其他 profile。完整版见 PROMPT.md。
+```
+
+</details>
+
 ## 安装
 
 免费 key：<https://agent.tinyfish.ai/api-keys>
@@ -57,10 +79,6 @@ node install.mjs --force     # 按新版 dsh 重新生成
 - 提示 `could not find the dsh installation` —— 命令前加 `DSH_INSTALL=/opt/dsh`（dsh-go 的位置）。
 - 装错了 profile —— 加 `--profile <name>`，默认跟随 `$DSH_PROFILE`。
 - 只想改一个 preset —— `--presets standard`。
-
-## 交给 agent
-
-把 [PROMPT.md](PROMPT.md) 和 key 一起给 coding agent，它会执行安装和检查，并把两行摘要回报给你。
 
 要求 dsh ≥ 0.2；不安装任何依赖（MCP 客户端是 dsh 自带的）。
 

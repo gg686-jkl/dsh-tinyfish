@@ -12,6 +12,28 @@
 After a restart, a new session sees `mcp__tinyfish__search` and `mcp__tinyfish__fetch_content`, and no
 `web_search` / `web_fetch`.
 
+<details>
+<summary><b>Let an agent install it</b> — copy the prompt, fill in your key</summary>
+
+```text
+Switch this machine's dsh profile from the built-in web_search / web_fetch (DeepSeek's paid Search & Fetch API) to TinyFish MCP. Stop if a step fails.
+
+TinyFish key: sk-tinyfish-xxxx
+
+1. `command -v dsh` must print a path. Note $DSH_PROFILE and $DSH_PROFILE_DIR; that is the profile to patch.
+2. git clone https://github.com/gg686-jkl/dsh-tinyfish-mcp.git
+   (no git: curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish-mcp/tar.gz/refs/heads/main | tar xz)
+3. cd dsh-tinyfish-mcp && node install.mjs --key sk-tinyfish-xxxx
+   If it reports that it cannot find the dsh installation, re-run with DSH_INSTALL=/opt/dsh in front.
+4. Report the printed "composed profile:" and "TinyFish MCP row mounted:" lines verbatim; if either says STILL PRESENT or false, the install failed — say so.
+5. Run: dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'serverName: tinyfish'   (expect 1)
+6. Tell me to restart the app and open a new session; the current session keeps its old tools.
+
+Constraints: only the current profile's cordis.patch.yml may change (the script backs it up); do not edit package.json, create AGENTS.md, or touch other profiles. Full version: PROMPT.md.
+```
+
+</details>
+
 ## Install
 
 Free key: <https://agent.tinyfish.ai/api-keys>
@@ -59,11 +81,6 @@ node install.mjs --force     # regenerate for the new dsh version
 - `could not find the dsh installation` — prefix `DSH_INSTALL=/opt/dsh` (the dsh-go location).
 - Installed into the wrong profile — `--profile <name>`; the default follows `$DSH_PROFILE`.
 - Only want one preset changed — `--presets standard`.
-
-## With an agent
-
-Hand [PROMPT.md](PROMPT.md) and your key to a coding agent; it runs the install and check, then reports
-back the two summary lines.
 
 Requires dsh ≥ 0.2. No dependencies are installed; the MCP client ships with dsh.
 
