@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TinyFish">
+  <defs>
+    <linearGradient id="tf-body" x1="10" y1="14" x2="54" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38c6d9"/>
+      <stop offset="1" stop-color="#1d6fb8"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 34c0-9 8-16 19-16 12 0 21 7 21 16 0 9-9 16-21 16-11 0-19-7-19-16Z" fill="url(#tf-body)"/>
+  <path d="M12 34 4 24v20l8-10Z" fill="#1d6fb8"/>
+  <path d="M52 34c4-5 6-9 6-13-3 1-5 3-7 5" fill="none" stroke="#38c6d9" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="40" cy="30" r="3.4" fill="#ffffff"/>
+  <circle cx="41.2" cy="30" r="1.6" fill="#0d2b45"/>
+  <path d="M26 42c4 2 9 2 13 0" fill="none" stroke="#e8f7fb" stroke-width="2.4" stroke-linecap="round" opacity="0.85"/>
+  <circle cx="26" cy="24" r="3" fill="#7fe3f0" opacity="0.75"/>
+  <circle cx="33" cy="20" r="2.4" fill="#7fe3f0" opacity="0.55"/>
+</svg>
