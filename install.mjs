@@ -5,12 +5,13 @@
  * The shipped `@deepseek-ai/dsh-tool-web` plugin already owns those tool names,
  * parameter schemas, descriptions and rendering; this installer only registers
  * TinyFish as the `ctx.web` search + fetch provider, so a model trained on the
- * official tools sees exactly the shapes it knows. The full TinyFish MCP server
- * is mounted too, for browser automation, research, datasets and monitors.
+ * official tools sees exactly the shapes it knows. No MCP server is mounted:
+ * the free TinyFish products are search and fetch, which these tools cover.
  *
  *   node install.mjs --key sk-tinyfish-... [--profile web]
- *   node install.mjs --profile web --force     # after moving the repo or upgrading dsh
- *   node install.mjs --profile web --revert    # remove the managed block
+ *   node install.mjs --profile web --force      # after moving the repo or upgrading dsh
+ *   node install.mjs --profile web --revert     # remove the managed block
+ *   node install.mjs --key ... --with-mcp       # also mount the paid MCP extras
  */
 import { chmodSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -22,12 +23,13 @@ const BEGIN = '# >>> dsh-tinyfish'
 const END = '# <<< dsh-tinyfish'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const PROVIDER = pathToFileURL(join(HERE, 'provider', 'index.mjs')).href
-const opt = { force: false, revert: false, profile: null, key: null }
+const opt = { force: false, revert: false, withMcp: false, profile: null, key: null }
 
 for (let i = 0; i < process.argv.length - 2; i += 1) {
   const arg = process.argv[i + 2]
   if (arg === '--force' || arg === '-f') opt.force = true
   else if (arg === '--revert') opt.revert = true
+  else if (arg === '--with-mcp') opt.withMcp = true
   else if (arg === '--profile' || arg === '-p') opt.profile = process.argv[(i += 1) + 2]
   else if (arg === '--key' || arg === '-k') opt.key = process.argv[(i += 1) + 2]
   else if (arg === '--help' || arg === '-h') {
@@ -38,10 +40,11 @@ for (let i = 0; i < process.argv.length - 2; i += 1) {
 
 function usage() {
   return [
-    'usage: node install.mjs [--profile <name>] [--key <tinyfish-key>] [--force] [--revert]',
+    'usage: node install.mjs [--profile <name>] [--key <tinyfish-key>] [--with-mcp] [--force] [--revert]',
     '',
     '  --profile  dsh profile to patch (default: $DSH_PROFILE_DIR, else $DSH_PROFILE, else "web")',
     '  --key      TinyFish API key; written to $DSH_HOME/tinyfish.key (mode 600)',
+    '  --with-mcp also mount the TinyFish MCP server (paid extras: agent, browser, monitors)',
     '  --force    regenerate the managed block, e.g. after moving this directory',
     '  --revert   remove the managed block again',
   ].join('\n')
@@ -148,22 +151,25 @@ const region = [
   '#    plugin keeps owning web_search / web_fetch, so the model-facing names and',
   '#    parameter schemas stay exactly the official ones.',
   '# 2. The web row selects the TinyFish provider for both search and fetch.',
-  '# 3. mcp-tinyfish adds the rest of the TinyFish MCP server (automation, research,',
-  '#    datasets, monitors, batches). Both read the API key from',
-  '#    $DSH_HOME/tinyfish.key (mode 600); the key never appears in this file.',
+  '#    Nothing else is mounted: no MCP tools, no namespaced names. The key is read',
+  '#    from $DSH_HOME/tinyfish.key (mode 600) and never appears in this file.',
   '- insert:',
   '    - id: web-tinyfish',
   `      name: ${PROVIDER}`,
-  '    - id: mcp-tinyfish',
-  "      name: '@deepseek-ai/dsh-mcp-client'",
-  '      config:',
-  '        serverName: tinyfish',
-  '        transport: streamable-http',
-  '        url: https://agent.tinyfish.ai/mcp',
-  '        toolCallTimeoutMs: 180000',
-  '        failOnStartupError: true',
-  '        headers:',
-  `          Authorization: !!js "'Bearer ' + process.getBuiltinModule('node:fs').readFileSync((process.env.DSH_HOME || process.env.HOME + '/.dsh') + '/tinyfish.key', 'utf8').trim()"`,
+  ...(opt.withMcp
+    ? [
+        '    - id: mcp-tinyfish',
+        "      name: '@deepseek-ai/dsh-mcp-client'",
+        '      config:',
+        '        serverName: tinyfish',
+        '        transport: streamable-http',
+        '        url: https://agent.tinyfish.ai/mcp',
+        '        toolCallTimeoutMs: 180000',
+        '        failOnStartupError: true',
+        '        headers:',
+        `          Authorization: !!js "'Bearer ' + process.getBuiltinModule('node:fs').readFileSync((process.env.DSH_HOME || process.env.HOME + '/.dsh') + '/tinyfish.key', 'utf8').trim()"`,
+      ]
+    : []),
   '- id: web',
   '  config:',
   '    searchProvider: tinyfish',
@@ -202,4 +208,5 @@ console.log('patched', patchPath)
 console.log('provider row mounted:', dump.includes('id: web-tinyfish'))
 console.log('web seam pointed at tinyfish:', /searchProvider: tinyfish/.test(dump) && /fetchProvider: tinyfish/.test(dump))
 console.log('official web_search/web_fetch enabled:', officialTools)
+if (opt.withMcp) console.log('TinyFish MCP row (paid extras):', dump.includes('id: mcp-tinyfish'))
 console.log('\nNext: restart the app, open a NEW session, then run a web search: it should report using TinyFish.')

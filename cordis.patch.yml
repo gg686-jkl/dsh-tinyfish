@@ -1,30 +1,21 @@
-# TinyFish web toolkit for this dsh profile.
+# TinyFish as the backend of dsh's own web tools.
 #
-# 1. `web-tinyfish` registers TinyFish as the backend of dsh's own web capability
-#    seam (`ctx.web`). The shipped `@deepseek-ai/dsh-tool-web` plugin keeps owning
-#    the model-facing `web_search` / `web_fetch` tools — names, parameter schemas,
-#    descriptions and output rendering stay exactly the official ones, only the
-#    search and fetch calls go to TinyFish.
-# 2. The `web` row is pointed at the TinyFish provider for both capabilities.
-# 3. `mcp-tinyfish` mounts the full TinyFish MCP server for what the seam does not
-#    cover: browser automation, deep research, datasets, monitors, batches.
+# `web-tinyfish` registers TinyFish on the `ctx.web` capability seam. The shipped
+# `@deepseek-ai/dsh-tool-web` plugin keeps owning the model-facing `web_search`
+# and `web_fetch` tools, so their names, parameter schemas, descriptions and
+# output rendering are exactly the official ones — only the search and fetch
+# calls go to TinyFish's free Search & Fetch APIs.
 #
-# DSH's MCP client has no interactive OAuth flow, so both use the API key read at
-# activation time from $DSH_HOME/tinyfish.key (mode 600); the key never appears in
-# this file.
+# The `web` row below selects the TinyFish provider for both capabilities. No MCP
+# server is mounted: everything TinyFish gives away for free is search and fetch,
+# which these two official tools already cover, and no tool name gets a namespace
+# prefix.
+#
+# The API key is read at activation time from $DSH_HOME/tinyfish.key (mode 600);
+# it never appears in this file.
 - insert:
     - id: web-tinyfish
       name: file:///home/psyh/Projects/dsh-tinyfish-mcp/provider/index.mjs
-    - id: mcp-tinyfish
-      name: '@deepseek-ai/dsh-mcp-client'
-      config:
-        serverName: tinyfish
-        transport: streamable-http
-        url: https://agent.tinyfish.ai/mcp
-        toolCallTimeoutMs: 180000
-        failOnStartupError: true
-        headers:
-          Authorization: !!js "'Bearer ' + process.getBuiltinModule('node:fs').readFileSync((process.env.DSH_HOME || process.env.HOME + '/.dsh') + '/tinyfish.key', 'utf8').trim()"
 - id: web
   config:
     searchProvider: tinyfish

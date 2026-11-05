@@ -3,13 +3,14 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "TinyFish MCP connection plus preset overrides that leave web search and fetch to TinyFish",
+  "description": "TinyFish as the provider behind dsh's own web_search / web_fetch tools \u2014 official tool names and schemas, free search and fetch, no MCP tools",
   "exports": {
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
   "files": [
     "cordis.patch.yml",
+    "provider",
     "locale/*.json",
     "icon.svg"
   ],
