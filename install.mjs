@@ -1,35 +1,28 @@
 #!/usr/bin/env node
 /**
- * Put TinyFish's MCP server in charge of web access for a dsh profile, and take
- * the built-in web_search / web_fetch tools away from every agent preset that
- * ships them.
+ * Put TinyFish behind dsh's own `web_search` / `web_fetch` tools.
  *
- * Everything is generated from the dsh installation on this machine, so the
- * preset overrides always match the running dsh version.
+ * The shipped `@deepseek-ai/dsh-tool-web` plugin already owns those tool names,
+ * parameter schemas, descriptions and rendering; this installer only registers
+ * TinyFish as the `ctx.web` search + fetch provider, so a model trained on the
+ * official tools sees exactly the shapes it knows. The full TinyFish MCP server
+ * is mounted too, for browser automation, research, datasets and monitors.
  *
  *   node install.mjs --key sk-tinyfish-... [--profile web]
- *   node install.mjs --profile web --presets standard,cordis
- *   node install.mjs --profile web --force     # after a dsh upgrade
+ *   node install.mjs --profile web --force     # after moving the repo or upgrading dsh
  *   node install.mjs --profile web --revert    # remove the managed block
  */
-import {
-  chmodSync,
-  copyFileSync,
-  existsSync,
-  readFileSync,
-  readdirSync,
-  realpathSync,
-  writeFileSync,
-} from 'node:fs'
-import { basename, dirname, join } from 'node:path'
+import { chmodSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
 import { execFileSync } from 'node:child_process'
 
 const BEGIN = '# >>> dsh-tinyfish'
 const END = '# <<< dsh-tinyfish'
-// Every managed block, including the per-preset blocks older versions wrote.
-const REGION = /^# >>> dsh-tinyfish[^\n]*\n[\s\S]*?^# <<< dsh-tinyfish[^\n]*\n?/gm
-const opt = { force: false, revert: false, profile: null, key: null, presets: null }
+const HERE = dirname(fileURLToPath(import.meta.url))
+const PROVIDER = pathToFileURL(join(HERE, 'provider', 'index.mjs')).href
+const opt = { force: false, revert: false, profile: null, key: null }
 
 for (let i = 0; i < process.argv.length - 2; i += 1) {
   const arg = process.argv[i + 2]
@@ -37,7 +30,6 @@ for (let i = 0; i < process.argv.length - 2; i += 1) {
   else if (arg === '--revert') opt.revert = true
   else if (arg === '--profile' || arg === '-p') opt.profile = process.argv[(i += 1) + 2]
   else if (arg === '--key' || arg === '-k') opt.key = process.argv[(i += 1) + 2]
-  else if (arg === '--presets') opt.presets = process.argv[(i += 1) + 2]
   else if (arg === '--help' || arg === '-h') {
     console.log(usage())
     process.exit(0)
@@ -46,12 +38,11 @@ for (let i = 0; i < process.argv.length - 2; i += 1) {
 
 function usage() {
   return [
-    'usage: node install.mjs [--profile <name>] [--key <tinyfish-key>] [--presets a,b] [--force] [--revert]',
+    'usage: node install.mjs [--profile <name>] [--key <tinyfish-key>] [--force] [--revert]',
     '',
-    '  --profile  dsh profile to patch (default: $DSH_PROFILE, else "web")',
+    '  --profile  dsh profile to patch (default: $DSH_PROFILE_DIR, else $DSH_PROFILE, else "web")',
     '  --key      TinyFish API key; written to $DSH_HOME/tinyfish.key (mode 600)',
-    '  --presets  presets to override (default: every shipped preset that has tool-web)',
-    '  --force    regenerate the managed block, e.g. after a dsh upgrade',
+    '  --force    regenerate the managed block, e.g. after moving this directory',
     '  --revert   remove the managed block again',
   ].join('\n')
 }
@@ -69,71 +60,22 @@ const profileDir = opt.profile
 const patchPath = join(profileDir, 'cordis.patch.yml')
 const keyPath = join(dshHome, 'tinyfish.key')
 
-// ---------------------------------------------------------------------------
-// Locate the real dsh installation.
-//
-// `dsh` on PATH is often a launcher shim (the dsh-go app ships one, and some
-// package-manager setups do too), so dirname(dirname(realpath(bin))) can point
-// at /usr/local instead of the install. Read the launcher and use the dsh entry
-// point it actually runs, then verify each candidate before trusting it.
-// ---------------------------------------------------------------------------
-
 let root
 function dshInstallRoot() {
   if (root) return root
-  const candidates = []
-  if (process.env.DSH_INSTALL) candidates.push(process.env.DSH_INSTALL)
-  let bin = null
+  if (process.env.DSH_INSTALL) return (root = process.env.DSH_INSTALL)
+  let bin
   try {
     bin = execFileSync('bash', ['-lc', 'command -v dsh'], { encoding: 'utf8' }).trim()
   } catch {
-    bin = null
+    die('dsh is not on PATH; set DSH_INSTALL to the @deepseek-ai/dsh installation directory')
   }
-  if (bin) {
-    let real = bin
-    try {
-      real = realpathSync(bin)
-    } catch {
-      /* keep the unresolved path */
-    }
-    candidates.push(dirname(dirname(real)))
-    try {
-      const text = readFileSync(real, 'utf8')
-      for (const match of text.matchAll(/(\/[^'"\s;]*?)\/node_modules\/@deepseek-ai\/dsh\/lib\/bin\.js/g)) {
-        candidates.push(match[1])
-      }
-    } catch {
-      /* not a readable launcher */
-    }
-  }
-  for (const candidate of [...new Set(candidates)]) {
-    try {
-      createRequire(join(candidate, 'package.json')).resolve('@deepseek-ai/dsh-web-app/package.json')
-      return (root = candidate)
-    } catch {
-      /* try the next candidate */
-    }
-  }
-  die(
-    [
-      'could not find the dsh installation',
-      `  tried: ${[...new Set(candidates)].join(', ') || '(nothing)'}`,
-      '  set DSH_INSTALL to the directory holding node_modules/@deepseek-ai/dsh',
-      '  (for the dsh-go app this is usually /opt/dsh)',
-    ].join('\n'),
-  )
+  root = dirname(dirname(execFileSync('readlink', ['-f', bin], { encoding: 'utf8' }).trim()))
+  return root
 }
 
-function requireFromRoot(specifier) {
-  return createRequire(join(dshInstallRoot(), 'package.json')).resolve(specifier)
-}
-
-function webAppPresetsDir() {
-  try {
-    return join(dirname(requireFromRoot('@deepseek-ai/dsh-web-app/package.json')), 'presets')
-  } catch {
-    die('@deepseek-ai/dsh-web-app is not part of this dsh installation, so this profile has no agent presets to override')
-  }
+function loadYaml() {
+  return createRequire(join(dshInstallRoot(), 'package.json'))('js-yaml')
 }
 
 function dumpConfig() {
@@ -152,14 +94,25 @@ function dumpConfig() {
 if (!existsSync(patchPath)) die(`no profile at ${profileDir} (is "${profile}" the right profile name?)`)
 
 const original = readFileSync(patchPath, 'utf8')
-const hasRegion = new RegExp(REGION.source, 'm').test(original)
+const hasRegion = original.includes(BEGIN)
+
+function withoutManagedRegion(text) {
+  if (!text.includes(BEGIN)) return text
+  return text.slice(0, text.indexOf(BEGIN)) + text.slice(text.indexOf(END) + END.length + 1)
+}
+
+function asPatchBody(text) {
+  const bare = text.trim()
+  if (bare === '' || bare === '[]' || bare === '---\n[]' || bare === '--- []') return ''
+  return text.replace(/\s*$/, '\n') + '\n'
+}
 
 if (opt.revert) {
   if (!hasRegion) die('this profile has no managed dsh-tinyfish block')
   const stripped = withoutManagedRegion(original).replace(/\s*$/, '')
   writeFileSync(patchPath, (stripped.trim() === '' ? '[]' : stripped) + '\n')
   console.log('removed the dsh-tinyfish block from', patchPath)
-  console.log('restart the app, then use a new session to see the built-in web tools again')
+  console.log('restart the app, then use a new session to get the shipped web tools back')
   process.exit(0)
 }
 
@@ -168,8 +121,9 @@ if (hasRegion && !opt.force) {
   process.exit(0)
 }
 
-if (!hasRegion && dumpConfig().includes('serverName: tinyfish')) {
-  console.log('already installed (TinyFish MCP is mounted by another layer, e.g. a profile bundle)')
+const before = hasRegion ? dumpConfig() : ''
+if (!hasRegion && before.includes('web-tinyfish')) {
+  console.log('already installed (TinyFish provider is mounted by another layer, e.g. a profile bundle)')
   process.exit(0)
 }
 
@@ -184,80 +138,19 @@ if (key) {
   console.log('reusing existing key file', keyPath)
 }
 
-// ---------------------------------------------------------------------------
-// Preset overrides: same plugin list as the shipped preset, minus tool-web.
-// ---------------------------------------------------------------------------
-
-/** Shipped presets, in directory order, with their raw text. */
-function shippedPresets() {
-  const dir = webAppPresetsDir()
-  if (!existsSync(dir)) die(`no presets directory at ${dir}`)
-  return readdirSync(dir)
-    .filter((file) => file.endsWith('.patch.yml'))
-    .sort()
-    .map((file) => ({ id: basename(file, '.patch.yml'), text: readFileSync(join(dir, file), 'utf8') }))
-}
-
-/** The shipped preset row, re-indented one level and without its tool-web entry. */
-function presetBody(id, text) {
-  const lines = text.split('\n')
-  const start = lines.findIndex((line) => line.trim() === `- id: preset-${id}`)
-  if (start < 0) die(`preset-${id} not found in its shipped preset file`)
-  const rowIndent = lines[start].match(/^ */)[0].length
-  let end = start + 1
-  while (end < lines.length) {
-    const line = lines[end]
-    if (line.trim().startsWith('- ') && line.match(/^ */)[0].length === rowIndent) break
-    end += 1
-  }
-  const body = lines
-    .slice(start, end)
-    .map((line) =>
-      line.startsWith(' '.repeat(rowIndent)) ? line.slice(rowIndent) : line.trim() === '' ? '' : line,
-    )
-  body.shift()
-
-  const toolWeb = body.findIndex((line) => line.trim() === '- id: tool-web')
-  if (toolWeb >= 0) {
-    let stop = toolWeb + 1
-    while (stop < body.length) {
-      const line = body[stop]
-      if (line.trim() !== '' && line.match(/^ */)[0].length <= 6) break
-      stop += 1
-    }
-    body.splice(toolWeb, stop - toolWeb)
-  }
-  return body
-}
-
-const presets = shippedPresets()
-const withToolWeb = presets.filter((preset) => /^\s*- id: tool-web\s*$/m.test(preset.text))
-const wanted = opt.presets
-  ? opt.presets
-      .split(',')
-      .map((name) => name.trim().replace(/^preset-/, ''))
-      .filter(Boolean)
-  : withToolWeb.map((preset) => preset.id)
-if (wanted.length === 0) {
-  console.log('note: this dsh version ships no preset with tool-web; only the MCP row will be added')
-}
-for (const id of wanted) {
-  if (!presets.some((preset) => preset.id === id)) die(`no shipped preset named "${id}"`)
-}
-
-const authExpr = "(process.env.DSH_HOME || process.env.HOME + '/.dsh') + '/tinyfish.key'"
 const region = [
   BEGIN,
   '# Managed block: `node install.mjs --force` regenerates it, `--revert` removes it.',
-  '# 1. Mounts TinyFish over streamable HTTP. dsh has no interactive OAuth flow, so',
-  '#    the connection authenticates with an API key read at activation time from',
+  '# 1. web-tinyfish registers TinyFish on the ctx.web seam. The shipped tool-web',
+  '#    plugin keeps owning web_search / web_fetch, so the model-facing names and',
+  '#    parameter schemas stay exactly the official ones.',
+  '# 2. The web row selects the TinyFish provider for both search and fetch.',
+  '# 3. mcp-tinyfish adds the rest of the TinyFish MCP server (automation, research,',
+  '#    datasets, monitors, batches). Both read the API key from',
   '#    $DSH_HOME/tinyfish.key (mode 600); the key never appears in this file.',
-  '# 2. Overrides every shipped preset that carries tool-web with the same plugin',
-  '#    list minus that entry. The preset a new session actually resolves is',
-  '#    agent-preset-registry `selectedDefault` when set, else `default`; both are',
-  '#    profile-level, and cordis / ptc ship tool-web just like standard, so',
-  '#    overriding standard alone still leaves web_search reachable.',
   '- insert:',
+  '    - id: web-tinyfish',
+  `      name: ${PROVIDER}`,
   '    - id: mcp-tinyfish',
   "      name: '@deepseek-ai/dsh-mcp-client'",
   '      config:',
@@ -267,31 +160,19 @@ const region = [
   '        toolCallTimeoutMs: 180000',
   '        failOnStartupError: true',
   '        headers:',
-  `          Authorization: !!js "'Bearer ' + process.getBuiltinModule('node:fs').readFileSync(${authExpr}, 'utf8').trim()"`,
-  '',
+  `          Authorization: !!js "'Bearer ' + process.getBuiltinModule('node:fs').readFileSync((process.env.DSH_HOME || process.env.HOME + '/.dsh') + '/tinyfish.key', 'utf8').trim()"`,
+  '- id: web',
+  '  config:',
+  '    searchProvider: tinyfish',
+  '    fetchProvider: tinyfish',
+  END,
 ]
-for (const id of wanted) {
-  const shipped = presets.find((preset) => preset.id === id)
-  region.push(`- id: preset-${id}`, ...presetBody(id, shipped.text), '')
-}
-region.push(END)
 
-function withoutManagedRegion(text) {
-  return text.replace(REGION, '')
-}
-
-function asPatchBody(text) {
-  const bare = text.trim()
-  if (bare === '' || bare === '[]' || bare === '---\n[]' || bare === '--- []') return ''
-  return text.replace(/\s*$/, '\n') + '\n'
-}
-
-const withoutRegion = withoutManagedRegion(original)
-const next = asPatchBody(withoutRegion) + region.join('\n') + '\n'
-if (!hasRegion) copyFileSync(patchPath, `${patchPath}.bak`)
+const next = asPatchBody(withoutManagedRegion(original)) + region.join('\n') + '\n'
+copyFileSync(patchPath, `${patchPath}.bak`)
 writeFileSync(patchPath, next)
 
-const yaml = createRequire(join(dshInstallRoot(), 'package.json'))('js-yaml')
+const yaml = loadYaml()
 const jsTag = new yaml.Type('tag:yaml.org,2002:js', {
   kind: 'scalar',
   construct: (data) => ({ __jsExpr: data }),
@@ -300,36 +181,15 @@ const jsTag = new yaml.Type('tag:yaml.org,2002:js', {
 try {
   yaml.load(next, { schema: yaml.DEFAULT_SCHEMA.extend([jsTag]) })
 } catch (error) {
-  if (!hasRegion) copyFileSync(`${patchPath}.bak`, patchPath)
-  die(`generated patch does not parse${hasRegion ? '' : ', restored the backup'}:\n${error.message}`)
-}
-
-function presetSection(dump, id) {
-  const marker = `- id: preset-${id}\n`
-  const start = dump.indexOf(marker)
-  if (start < 0) return ''
-  const rest = dump.slice(start + 1)
-  const end = rest.search(/\n- (?:id|insert):/)
-  return end < 0 ? dump.slice(start) : dump.slice(start, start + 1 + end)
+  copyFileSync(`${patchPath}.bak`, patchPath)
+  die(`generated patch does not parse, restored the backup:\n${error.message}`)
 }
 
 let dump = dumpConfig()
-if (!dump.includes('serverName: tinyfish')) dump = dumpConfig()
-
-const report = wanted.map((id) => {
-  const section = presetSection(dump, id)
-  const plugins = (section.match(/^ {6}- id: /gm) || []).length
-  return { id, plugins, clean: section !== '' && !/\n\s*- id: tool-web\s*$/m.test(section) }
-})
-
+if (!dump.includes('web-tinyfish')) dump = dumpConfig()
+const officialTools = dump.includes("name: '@deepseek-ai/dsh-tool-web'") && !/name: '@deepseek-ai\/dsh-tool-web'\n\s+disabled: true/.test(dump)
 console.log('patched', patchPath)
-console.log(
-  'composed profile:',
-  report.length === 0
-    ? 'no preset override'
-    : report
-        .map(({ id, plugins, clean }) => `${id} (${plugins} plugins, ${clean ? 'tool-web removed' : 'tool-web STILL PRESENT'})`)
-        .join(', '),
-)
-console.log('TinyFish MCP row mounted:', dump.includes('serverName: tinyfish'))
-console.log('\nNext: restart the app, open a NEW session, then confirm it has mcp__tinyfish__search and no web_search.')
+console.log('provider row mounted:', dump.includes('id: web-tinyfish'))
+console.log('web seam pointed at tinyfish:', /searchProvider: tinyfish/.test(dump) && /fetchProvider: tinyfish/.test(dump))
+console.log('official web_search/web_fetch enabled:', officialTools)
+console.log('\nNext: restart the app, open a NEW session, then run a web search: it should report using TinyFish.')

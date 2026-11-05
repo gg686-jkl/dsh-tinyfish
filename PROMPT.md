@@ -5,8 +5,10 @@ Paste the block below into a fresh agent session and replace `sk-tinyfish-xxxx` 
 
 ---
 
-Switch this machine's dsh profile from the built-in `web_search` / `web_fetch` (DeepSeek's paid Search &
-Fetch API) to the TinyFish MCP server. Work in order and stop if a step fails.
+Switch this machine's dsh profile from DeepSeek's paid Search & Fetch API to TinyFish. Keep the
+model-facing tools exactly as they are: the installed `@deepseek-ai/dsh-tool-web` plugin must still
+provide `web_search` / `web_fetch` with their official names and parameters — the script only registers
+TinyFish as the backend (`ctx.web` provider). Work in order and stop if a step fails.
 
 TinyFish key: `sk-tinyfish-xxxx`
 
@@ -31,23 +33,32 @@ TinyFish key: `sk-tinyfish-xxxx`
    Add `--profile <name>` only if the user named a different profile. If it reports that it cannot find
    the dsh installation, re-run with `DSH_INSTALL=/opt/dsh` in front (dsh-go's location).
 
-4. Report these two printed lines verbatim: `composed profile: …` and `TinyFish MCP row mounted: …`.
-   If either says `STILL PRESENT` or `false`, report the failure — do not claim success.
+4. Report these printed lines verbatim:
+
+   ```
+   provider row mounted: …
+   web seam pointed at tinyfish: …
+   official web_search/web_fetch enabled: …
+   ```
+
+   If any is `false`, report the failure — do not claim success.
 
 5. Verify, and include the number in the report:
 
    ```bash
-   dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'serverName: tinyfish'
+   dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'web-tinyfish'
    ```
 
    Expect `1`.
 
 6. Tell the user, in their language: restart the app, then open a **new** session. The current session
-   keeps its old tools. The new session should list `mcp__tinyfish__search` and no `web_search`.
+   keeps the tools it started with. In the new session `web_search` / `web_fetch` should be listed exactly
+   as before, and results should now come from TinyFish.
 
 Constraints, which the script already respects, so do not work around it:
 
 - Only the current profile's `cordis.patch.yml` changes; it is backed up to `.bak` first.
 - Do not edit `package.json`, create `AGENTS.md`, or touch other profiles, the TUI, or repo files.
+- Do not remove or disable `tool-web` and do not hand-write tool schemas: the official tools stay.
 - Never print the key except as the `--key` argument; it belongs in `$DSH_HOME/tinyfish.key` (0600).
 - On failure, `node install.mjs --revert` and report the error you saw.
