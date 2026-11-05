@@ -48,5 +48,5 @@
     <tspan fill="#475569">   ·   </tspan>
     TinyFish: <tspan fill="#4ade80">free — 30 searches/min, 1,000 fetches/day</tspan>
   </text>
-  <text x="80" y="590" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#64748b">github.com/gg686-jkl/dsh-tinyfish-mcp</text>
+  <text x="80" y="590" font-family="DejaVu Sans Mono, monospace" font-size="20" fill="#64748b">github.com/gg686-jkl/dsh-tinyfish</text>
 </svg>
