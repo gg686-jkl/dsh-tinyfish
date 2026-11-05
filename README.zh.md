@@ -8,7 +8,7 @@
 
 ## 让 agent 帮你装
 
-复制下面这段，把 key 换成你自己的，丢给任意 coding agent（dsh、Claude Code、Codex 都行）。它会自己装、自己检查。
+复制下面这段，把 key 换成你自己的，交给 dsh 的**创造模式**（Creator mode）agent。那个 preset 本来就是用来改 harness 的；能跑命令的普通 agent（Claude Code、Codex）也行。它会自己装、自己检查。
 
 ```text
 把本机 dsh 的网页搜索/抓取换成免费的 TinyFish，作为官方 web_search / web_fetch 的后端。

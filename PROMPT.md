@@ -1,7 +1,8 @@
 # Agent prompt: put TinyFish behind dsh's web tools
 
-Paste the block below into a fresh agent session and replace `sk-tinyfish-xxxx` with your key
-(free, from <https://agent.tinyfish.ai/api-keys>).
+Best used in a dsh session running **Creator mode** (创造模式), the preset meant for changing the
+harness; any agent that can run shell commands works too. Paste the block below and replace
+`sk-tinyfish-xxxx` with your key (free, from <https://agent.tinyfish.ai/api-keys>).
 
 ---
 

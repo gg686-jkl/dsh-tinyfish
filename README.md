@@ -8,8 +8,9 @@ English | [中文](README.zh.md)
 
 ## Let an agent install it
 
-Copy this, replace the key, hand it to any coding agent (dsh, Claude Code, Codex…). It installs, checks,
-and tells you what happened.
+Copy this, replace the key, and hand it to a dsh agent in **Creator mode** (创造模式). That preset is
+made for changing the harness itself; any agent that can run shell commands works too. It installs,
+checks, and tells you what happened.
 
 ```text
 Install TinyFish as the free backend of this machine's dsh web tools. Keep the official web_search /
