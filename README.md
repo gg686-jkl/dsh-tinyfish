@@ -1,6 +1,6 @@
 # dsh-tinyfish
 
-**Free web search and fetch for dsh — without changing the tools your model already knows.**
+**dsh keeps its own web_search and web_fetch; TinyFish answers them, free.**
 
 English | [中文](README.zh.md)
 

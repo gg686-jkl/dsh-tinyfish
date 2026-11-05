@@ -1,6 +1,6 @@
 # dsh-tinyfish
 
-**给 dsh 免费用上搜索和抓取 —— 而且不改变模型已经认识的工具。**
+**dsh 还是用自己的 web_search 和 web_fetch，背后换成 TinyFish，免费。**
 
 [English](README.md) | 中文
 
