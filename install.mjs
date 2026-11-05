@@ -116,12 +116,15 @@ if (opt.revert) {
   process.exit(0)
 }
 
-if (hasRegion && !opt.force) {
+const regionText = hasRegion ? original.slice(original.indexOf(BEGIN)) : ''
+const outdated = hasRegion && !regionText.includes('web-tinyfish')
+if (hasRegion && !opt.force && !outdated) {
   console.log('already installed (managed block present); use --force to regenerate it')
   process.exit(0)
 }
+if (outdated) console.log('upgrading the existing block to the provider-based version (backup kept)')
 
-const before = hasRegion ? dumpConfig() : ''
+const before = hasRegion ? '' : dumpConfig()
 if (!hasRegion && before.includes('web-tinyfish')) {
   console.log('already installed (TinyFish provider is mounted by another layer, e.g. a profile bundle)')
   process.exit(0)
@@ -185,8 +188,15 @@ try {
   die(`generated patch does not parse, restored the backup:\n${error.message}`)
 }
 
-let dump = dumpConfig()
-if (!dump.includes('web-tinyfish')) dump = dumpConfig()
+let dump
+try {
+  dump = dumpConfig()
+  if (!dump.includes('web-tinyfish')) dump = dumpConfig()
+} catch {
+  console.log('patched', patchPath)
+  console.log('could not run --dump-config to verify; run the checks in README.md by hand')
+  process.exit(0)
+}
 const officialTools = dump.includes("name: '@deepseek-ai/dsh-tool-web'") && !/name: '@deepseek-ai\/dsh-tool-web'\n\s+disabled: true/.test(dump)
 console.log('patched', patchPath)
 console.log('provider row mounted:', dump.includes('id: web-tinyfish'))
