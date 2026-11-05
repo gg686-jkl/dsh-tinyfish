@@ -1,19 +1,19 @@
-# Agent prompt: deploy TinyFish as the web toolkit
+# Agent prompt: put TinyFish behind dsh's web tools
 
 Paste the block below into a fresh agent session and replace `sk-tinyfish-xxxx` with your key
-(free, from <https://agent.tinyfish.ai/api-keys>). Everything the agent needs is in the block.
+(free, from <https://agent.tinyfish.ai/api-keys>).
 
 ---
 
-Switch this machine's dsh profile from DeepSeek's paid Search & Fetch API to TinyFish. Keep the
-model-facing tools exactly as they are: the installed `@deepseek-ai/dsh-tool-web` plugin must still
-provide `web_search` / `web_fetch` with their official names and parameters — the script only registers
-TinyFish as the backend (`ctx.web` provider). Work in order and stop if a step fails.
+This machine's dsh pays for web search and fetch through DeepSeek's Search & Fetch API. Switch that to
+TinyFish, which is free, without changing the tools the model sees: keep `web_search` / `web_fetch` as
+they are, and let `install.mjs` register TinyFish as the `ctx.web` provider behind them. Work in order and
+stop if a step fails.
 
 TinyFish key: `sk-tinyfish-xxxx`
 
 1. `command -v dsh` must print a path. Note `$DSH_PROFILE` and `$DSH_PROFILE_DIR`; that is the profile to
-   patch, do not pick another.
+   patch, don't pick another.
 
 2. Fetch the repo:
 
@@ -30,8 +30,8 @@ TinyFish key: `sk-tinyfish-xxxx`
    node install.mjs --key sk-tinyfish-xxxx
    ```
 
-   Add `--profile <name>` only if the user named a different profile. If it reports that it cannot find
-   the dsh installation, re-run with `DSH_INSTALL=/opt/dsh` in front (dsh-go's location).
+   Add `--profile <name>` only if the user named a different profile. If it says it cannot find the dsh
+   installation, re-run with `DSH_INSTALL=/opt/dsh` in front (dsh-go's location).
 
 4. Report these printed lines verbatim:
 
@@ -41,9 +41,9 @@ TinyFish key: `sk-tinyfish-xxxx`
    official web_search/web_fetch enabled: …
    ```
 
-   If any is `false`, report the failure — do not claim success.
+   If any is `false`, the install failed: say so instead of claiming success.
 
-5. Verify, and include the number in the report:
+5. Check, and include the number in the report:
 
    ```bash
    dsh --profile "${DSH_PROFILE:-web}" --dump-config | grep -c 'web-tinyfish'
@@ -52,13 +52,13 @@ TinyFish key: `sk-tinyfish-xxxx`
    Expect `1`.
 
 6. Tell the user, in their language: restart the app, then open a **new** session. The current session
-   keeps the tools it started with. In the new session `web_search` / `web_fetch` should be listed exactly
-   as before, and results should now come from TinyFish.
+   keeps the tools it started with; the new one lists `web_search` / `web_fetch` as before, now answered
+   by TinyFish.
 
-Constraints, which the script already respects, so do not work around it:
+Constraints. The script already follows them, so don't work around it:
 
 - Only the current profile's `cordis.patch.yml` changes; it is backed up to `.bak` first.
-- Do not edit `package.json`, create `AGENTS.md`, or touch other profiles, the TUI, or repo files.
-- Do not remove or disable `tool-web` and do not hand-write tool schemas: the official tools stay.
+- Don't edit `package.json`, create `AGENTS.md`, or touch other profiles, the TUI, or repo files.
+- Don't remove or disable `tool-web`, and don't hand-write tool schemas.
 - Never print the key except as the `--key` argument; it belongs in `$DSH_HOME/tinyfish.key` (0600).
-- On failure, `node install.mjs --revert` and report the error you saw.
+- On failure: `node install.mjs --revert`, then report the error you saw.

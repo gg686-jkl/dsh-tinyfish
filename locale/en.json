@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "TinyFish Web Toolkit",
-    "description": "Points dsh's own web_search and web_fetch tools at TinyFish's free Search & Fetch APIs. The official tool definitions stay untouched; no MCP tools are mounted."
+    "description": "Runs dsh's web_search and web_fetch on TinyFish's free APIs. The official tools stay as they are."
   }
 }

@@ -8,8 +8,8 @@ English | [中文](README.zh.md)
 
 ## Let an agent install it
 
-Copy this, replace the key, hand it to any coding agent (dsh, Claude Code, Codex…). It brings its own
-steps and verifies the result.
+Copy this, replace the key, hand it to any coding agent (dsh, Claude Code, Codex…). It installs, checks,
+and tells you what happened.
 
 ```text
 Install TinyFish as the free backend of this machine's dsh web tools. Keep the official web_search /
@@ -44,7 +44,7 @@ curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish/tar.gz/refs/heads/
 cd dsh-tinyfish-main && node install.mjs --key sk-tinyfish-xxxx
 ```
 
-Restart dsh, open a **new session**. Done — search and fetch now go through TinyFish.
+Restart dsh and open a **new session**. Search and fetch now go through TinyFish.
 
 ## Check
 
@@ -60,29 +60,31 @@ node install.mjs --revert
 
 ## FAQ
 
-**Do the tools change?** No. `web_search` / `web_fetch` keep the official names, parameter schemas,
-descriptions and output format. This project only registers TinyFish as the `ctx.web` provider, so the
-model sees the tools it was trained on.
+**Do the tools change?** No. `web_search` / `web_fetch` keep the official names, parameters, descriptions
+and output format. This project only registers TinyFish as the `ctx.web` provider, so the model sees the
+same tools as before.
 
-**What does it cost?** Nothing. TinySearch is free at 30 requests/min, TinyFetch free at 1,000 URLs/day,
-and neither touches the TinyFish wallet. DeepSeek's Search & Fetch APIs bill $0.75 per 1,000 requests
-each.
+**What does it cost?** Nothing, and no card is needed. TinySearch allows 30 requests/min and 500/hour;
+TinyFetch allows 1,000 URLs/day. DeepSeek's Search & Fetch APIs bill $0.75 per 1,000 requests each.
 
 **What about browser automation or deep research?** TinyFish charges for those, so they are not mounted
 by default. `node install.mjs --key … --with-mcp` adds them as `mcp__tinyfish__*` tools.
 
 **Why not just use the TinyFish MCP server for everything?** Its tools get namespaced
 (`mcp__tinyfish__search`) and use different schemas, so a model that knows `web_search` has to relearn
-them. Keeping the official tools costs nothing and behaves identically.
+them. With the official tools, nothing changes for the model.
 
-**Does it work on the dsh-go Android app?** Yes — same commands, no dependencies.
+**Does it work on the dsh-go Android app?** Yes. Same commands, no dependencies.
 
-**Already installed the old MCP-only version?** `node install.mjs --key … --force` upgrades in place.
+**Already installed the old MCP-only version?** Run `install.mjs` again; it upgrades the old block in
+place.
 
 ## Notes
 
-- Requires dsh ≥ 0.2. Nothing is installed but the repo itself.
+- Requires dsh ≥ 0.2, and nothing else to install.
 - The key lives in `$DSH_HOME/tinyfish.key` (mode 600) and never enters YAML.
+- Your profile points at this directory, so keep it where you cloned it. If you move it, re-run
+  `node install.mjs --force`.
 - Need TinyFish's advanced fetch parameters (`format`, CSS selectors, 10 URLs at once) or automation and
   research in the same session? Use `--with-mcp`; TinyFish bills those per use.
 

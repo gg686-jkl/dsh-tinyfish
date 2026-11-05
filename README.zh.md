@@ -8,7 +8,7 @@
 
 ## 让 agent 帮你装
 
-复制下面这段，把 key 换成你自己的，丢给任意 coding agent（dsh、Claude Code、Codex 都行）—— 它自带步骤，装完会自检。
+复制下面这段，把 key 换成你自己的，丢给任意 coding agent（dsh、Claude Code、Codex 都行）。它会自己装、自己检查。
 
 ```text
 把本机 dsh 的网页搜索/抓取换成免费的 TinyFish，作为官方 web_search / web_fetch 的后端。
@@ -43,7 +43,7 @@ curl -fsSL https://codeload.github.com/gg686-jkl/dsh-tinyfish/tar.gz/refs/heads/
 cd dsh-tinyfish-main && node install.mjs --key sk-tinyfish-xxxx
 ```
 
-重启 dsh，开一个**新会话**。搞定 —— 此后搜索和抓取都走 TinyFish。
+重启 dsh，开一个**新会话**。之后搜索和抓取都走 TinyFish。
 
 ## 检查
 
@@ -59,26 +59,27 @@ node install.mjs --revert
 
 ## 常见问题
 
-**工具会变吗？** 不会。`web_search` / `web_fetch` 的名字、参数 schema、描述、输出格式都是官方原版；
-本项目只是把 TinyFish 注册成 `ctx.web` 的 provider，模型看到的还是它训练时认识的那两个工具。
+**工具会变吗？** 不会。`web_search` / `web_fetch` 的名字、参数、描述、输出格式都是官方原版；
+本项目只是把 TinyFish 注册成 `ctx.web` 的 provider，模型看到的还是原来那两个工具。
 
-**要花钱吗？** 不用。TinySearch 免费（30 次/分），TinyFetch 免费（1,000 URL/天），都不扣钱包；
-DeepSeek 的 Search & Fetch 是各 $0.75 / 1,000 次。
+**要花钱吗？** 不用，也不用绑卡。TinySearch 每分钟 30 次、每小时 500 次；TinyFetch 每天 1,000 个 URL，
+都免费。DeepSeek 的 Search & Fetch 是各 $0.75 / 1,000 次。
 
 **浏览器自动化、深度研究呢？** 那些 TinyFish 收费，所以默认不挂。需要的话
 `node install.mjs --key … --with-mcp`，会以 `mcp__tinyfish__*` 的形式加进来。
 
 **那为什么不整个用 TinyFish 的 MCP？** 它的工具名会被加上命名空间（`mcp__tinyfish__search`），参数也不一样，
-模型得重新学；保留官方工具没有这个代价。
+模型得重新学；用官方工具则什么都不用改。
 
-**dsh-go 手机端能用吗？** 能，同样的命令，不装任何依赖。
+**dsh-go 手机端能用吗？** 能。同样的命令，不装任何依赖。
 
-**以前装过 MCP-only 的旧版？** `node install.mjs --key … --force` 原地升级。
+**以前装过 MCP-only 的旧版？** 再跑一遍 `install.mjs`，它会就地升级旧块。
 
 ## 说明
 
-- 需要 dsh ≥ 0.2；除了这个仓库本身，什么都不装。
+- 需要 dsh ≥ 0.2，不用装别的。
 - key 存在 `$DSH_HOME/tinyfish.key`（mode 600），不进 YAML。
+- profile 里记的是这个目录的绝对路径，克隆完别挪；挪了就重跑 `node install.mjs --force`。
 - 需要 TinyFish 的高级抓取参数（`format`、CSS selector、一次 10 个 URL），或者想在同一会话里跑自动化/深研？
   用 `--with-mcp`，那些能力 TinyFish 按量收费。
 
