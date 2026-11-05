@@ -13,9 +13,14 @@
 #
 # The API key is read at activation time from $DSH_HOME/tinyfish.key (mode 600);
 # it never appears in this file.
+#
+# `name` is a package subpath, resolved from the profile that installs this
+# bundle (the bundle itself lives in that profile's node_modules), so nothing
+# here depends on where the repository was cloned. `install.mjs` writes an
+# absolute file:// URL instead, because it patches a profile from a checkout.
 - insert:
     - id: web-tinyfish
-      name: file:///home/psyh/Projects/dsh-tinyfish-mcp/provider/index.mjs
+      name: '@local/dsh-tinyfish-mcp/provider/index.mjs'
 - id: web
   config:
     searchProvider: tinyfish

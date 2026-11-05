@@ -3,10 +3,11 @@
   "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "TinyFish as the provider behind dsh's own web_search / web_fetch tools \u2014 official tool names and schemas, free search and fetch, no MCP tools",
+  "description": "TinyFish as the provider behind dsh's own web_search / web_fetch tools — official tool names and schemas, free search and fetch, no MCP tools",
   "exports": {
     "./locale/*.json": "./locale/*.json",
-    "./icon": "./icon.svg"
+    "./icon": "./icon.svg",
+    "./provider/index.mjs": "./provider/index.mjs"
   },
   "files": [
     "cordis.patch.yml",
