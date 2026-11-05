@@ -13,7 +13,7 @@
  *   node install.mjs --profile web --revert     # remove the managed block
  *   node install.mjs --key ... --with-mcp       # also mount the paid MCP extras
  */
-import { chmodSync, copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { createRequire } from 'node:module'
@@ -66,15 +66,48 @@ const keyPath = join(dshHome, 'tinyfish.key')
 let root
 function dshInstallRoot() {
   if (root) return root
-  if (process.env.DSH_INSTALL) return (root = process.env.DSH_INSTALL)
-  let bin
+  const candidates = []
+  if (process.env.DSH_INSTALL) candidates.push(process.env.DSH_INSTALL)
+  let bin = null
   try {
     bin = execFileSync('bash', ['-lc', 'command -v dsh'], { encoding: 'utf8' }).trim()
   } catch {
-    die('dsh is not on PATH; set DSH_INSTALL to the @deepseek-ai/dsh installation directory')
+    bin = null
   }
-  root = dirname(dirname(execFileSync('readlink', ['-f', bin], { encoding: 'utf8' }).trim()))
-  return root
+  if (bin) {
+    let real = bin
+    try {
+      real = realpathSync(bin)
+    } catch {
+      /* keep the unresolved path */
+    }
+    candidates.push(dirname(dirname(real)))
+    // A launcher shim (the dsh-go app ships one) names the real bin.js inside.
+    try {
+      const text = readFileSync(real, 'utf8')
+      for (const match of text.matchAll(/(\/[^'"\s;]*?)\/node_modules\/@deepseek-ai\/dsh\/lib\/bin\.js/g)) {
+        candidates.push(match[1])
+      }
+    } catch {
+      /* not a readable launcher */
+    }
+  }
+  for (const candidate of [...new Set(candidates)]) {
+    try {
+      createRequire(join(candidate, 'package.json')).resolve('@deepseek-ai/dsh-web-app/package.json')
+      return (root = candidate)
+    } catch {
+      /* try the next candidate */
+    }
+  }
+  die(
+    [
+      'could not find the dsh installation',
+      `  tried: ${[...new Set(candidates)].join(', ') || '(nothing)'}`,
+      '  set DSH_INSTALL to the directory holding node_modules/@deepseek-ai/dsh',
+      '  (for the dsh-go app this is usually /opt/dsh)',
+    ].join('\n'),
+  )
 }
 
 function loadYaml() {
@@ -178,9 +211,8 @@ const region = [
 ]
 
 const next = asPatchBody(withoutManagedRegion(original)) + region.join('\n') + '\n'
-copyFileSync(patchPath, `${patchPath}.bak`)
-writeFileSync(patchPath, next)
 
+// Validate before touching the profile, so a broken generation never reaches disk.
 const yaml = loadYaml()
 const jsTag = new yaml.Type('tag:yaml.org,2002:js', {
   kind: 'scalar',
@@ -190,9 +222,11 @@ const jsTag = new yaml.Type('tag:yaml.org,2002:js', {
 try {
   yaml.load(next, { schema: yaml.DEFAULT_SCHEMA.extend([jsTag]) })
 } catch (error) {
-  copyFileSync(`${patchPath}.bak`, patchPath)
-  die(`generated patch does not parse, restored the backup:\n${error.message}`)
+  die(`generated patch does not parse, nothing was written:\n${error.message}`)
 }
+
+copyFileSync(patchPath, `${patchPath}.bak`)
+writeFileSync(patchPath, next)
 
 let dump
 try {
